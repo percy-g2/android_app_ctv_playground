@@ -1,3 +1,6 @@
+import com.android.build.gradle.internal.api.ApkVariantOutputImpl
+import org.gradle.kotlin.dsl.support.uppercaseFirstChar
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -13,15 +16,42 @@ android {
         minSdk = 29
         targetSdk = 35
         versionCode = 1
-        versionName = "1.0"
+        versionName = "0.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
-        release {
+        debug {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.getByName("debug")
+        }
+        applicationVariants.configureEach {
+            // rename the output APK file
+            outputs.configureEach {
+                (this as? ApkVariantOutputImpl)?.outputFileName =
+                    "${rootProject.name}_${versionName}(${versionCode})_${buildType.name}.apk"
+            }
+
+            // rename the output AAB file
+            tasks.named(
+                "sign${flavorName.uppercaseFirstChar()}${buildType.name.uppercaseFirstChar()}Bundle",
+                com.android.build.gradle.internal.tasks.FinalizeBundleTask::class.java
+            ) {
+                val file = finalBundleFile.asFile.get()
+                val finalFile =
+                    File(
+                        file.parentFile,
+                        "${rootProject.name}_$versionName($versionCode)_${buildType.name}.aab"
+                    )
+                finalBundleFile.set(finalFile)
+            }
         }
     }
     compileOptions {
@@ -37,7 +67,6 @@ android {
 }
 
 dependencies {
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -54,8 +83,10 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
-    implementation("org.bitcoinj:bitcoinj-core:0.17")
-    implementation("com.madgag.spongycastle:core:1.58.0.0")
-    implementation("com.google.code.gson:gson:2.11.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1")
+    implementation(libs.androidx.material.icons.extended)
+
+    implementation(libs.bitcoinj.core)
+    implementation(libs.spongycastle.core)
+    implementation(libs.gson)
+    implementation(libs.kotlinx.coroutines.android)
 }
