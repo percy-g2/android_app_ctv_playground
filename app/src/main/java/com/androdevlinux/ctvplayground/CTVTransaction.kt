@@ -1,12 +1,17 @@
 package com.androdevlinux.ctvplayground
 
 import com.androdevlinux.ctvplayground.hash.CTVHashCalculator
-import com.androdevlinux.ctvplayground.models.*
-import com.androdevlinux.ctvplayground.utils.AddressUtils
+import com.androdevlinux.ctvplayground.models.CTVContext
+import com.androdevlinux.ctvplayground.models.Output
+import com.androdevlinux.ctvplayground.models.TxType
+import com.androdevlinux.ctvplayground.utils.HashUtils
 import org.bitcoinj.base.Address
 import org.bitcoinj.base.Coin
+import org.bitcoinj.base.LegacyAddress
 import org.bitcoinj.base.Sha256Hash
-import org.bitcoinj.core.*
+import org.bitcoinj.core.Transaction
+import org.bitcoinj.core.TransactionInput
+import org.bitcoinj.core.TransactionOutPoint
 import org.bitcoinj.script.Script
 import org.bitcoinj.script.ScriptBuilder
 
@@ -25,10 +30,12 @@ class CTVTransaction(private val context: CTVContext) {
         val lockingScript = getLockingScript().getOrThrow()
         when (context.txType) {
             is TxType.Segwit -> {
-                AddressUtils.createP2WSHAddress(lockingScript, context.network)
+                val scriptHash = HashUtils.calculateScriptHash(lockingScript)
+                LegacyAddress.fromScriptHash(context.network, scriptHash)
             }
             is TxType.Taproot -> {
-                AddressUtils.createP2TRAddress(lockingScript, context.network)
+                val scriptHash = HashUtils.calculateScriptHash(lockingScript)
+                LegacyAddress.fromScriptHash(context.network, scriptHash)
             }
         }
     }
