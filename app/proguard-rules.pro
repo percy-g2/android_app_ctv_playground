@@ -1,112 +1,112 @@
-# Keep source file and line numbers for better crash reports
--keepattributes SourceFile,LineNumberTable
+# Basic Android optimization
+-optimizationpasses 5
+-dontusemixedcaseclassnames
+-dontskipnonpubliclibraryclasses
+-dontpreverify
+-verbose
+-optimizations !code/simplification/arithmetic,!field/*,!class/merging/*,!code/allocation/variable
+
+# Keep minimal source file attributes for stack traces
 -renamesourcefileattribute SourceFile
+-keepattributes SourceFile,LineNumberTable,*Annotation*,Signature,InnerClasses,EnclosingMethod
 
-# Keep annotation information
--keepattributes *Annotation*
--keepattributes Signature
--keepattributes Exceptions
-
-# BitcoinJ rules
--keep class org.bitcoinj.** { *; }
--keep class org.bitcoin.** { *; }
--dontwarn org.bitcoinj.**
--dontwarn org.bitcoin.**
-
-# BouncyCastle rules
--keep class org.bouncycastle.** { *; }
--keepclassmembers class org.bouncycastle.** {
-    public protected private *;
+# Remove Android logging
+-assumenosideeffects class android.util.Log {
+    public static *** d(...);
+    public static *** v(...);
+    public static *** i(...);
+    public static *** w(...);
+    public static *** e(...);
 }
+
+# BitcoinJ - keep only what's needed
+-keep class org.bitcoinj.core.** { *; }
+-keep class org.bitcoinj.script.** { *; }
+-keep class org.bitcoinj.crypto.** { *; }
+-keep class org.bitcoinj.base.** { *; }
+-dontwarn org.bitcoinj.**
+
+# BouncyCastle - minimal keep rules
+-keep class org.bouncycastle.jce.provider.BouncyCastleProvider
+-keep class org.bouncycastle.jce.provider.symmetric.** { *; }
+-keep class org.bouncycastle.jcajce.provider.digest.** { *; }
+-keep class org.bouncycastle.jcajce.provider.symmetric.** { *; }
 -dontwarn org.bouncycastle.**
 
-# Keep all native methods
+# SpongyCastle - minimal keep rules
+-keep class org.spongycastle.jce.provider.BouncyCastleProvider
+-keep class org.spongycastle.jce.provider.symmetric.** { *; }
+-keep class org.spongycastle.jcajce.provider.digest.** { *; }
+-keep class org.spongycastle.jcajce.provider.symmetric.** { *; }
+-dontwarn org.spongycastle.**
+
+# Keep your app's core classes
+-keep class com.androdevlinux.ctvplayground.models.** { *; }
+-keep class com.androdevlinux.ctvplayground.vault.** { *; }
+-keep class com.androdevlinux.ctvplayground.utils.** { *; }
+
+# Kotlin specific
+-keep class kotlin.** { *; }
+-keep class kotlin.Metadata { *; }
+-keep class kotlinx.coroutines.** { *; }
+-keepclassmembers class kotlin.Metadata {
+    public <methods>;
+}
+
+# Compose - minimal rules
+-keep class androidx.compose.runtime.** { *; }
+-keep class androidx.compose.ui.** { *; }
+-dontwarn androidx.compose.**
+
+# ViewModels
+-keepclassmembers class * extends androidx.lifecycle.ViewModel {
+    <init>();
+}
+
+# Crypto
+-keep class javax.crypto.Cipher
+-keep class javax.crypto.spec.SecretKeySpec
+-keep class java.security.MessageDigest
+-keep class java.security.SecureRandom
+
+# Remove debugging info
+-assumenosideeffects class android.util.Log {
+    public static boolean isLoggable(java.lang.String, int);
+    public static int v(...);
+    public static int d(...);
+    public static int i(...);
+}
+
+# Optimization flags
+-allowaccessmodification
+-repackageclasses ''
+-mergeinterfacesaggressively
+
+# Remove unused code
+-dontwarn javax.**
+-dontwarn java.awt.**
+-dontwarn java.beans.**
+-dontwarn org.w3c.**
+-dontwarn org.apache.**
+-dontwarn android.support.**
+-dontwarn com.google.android.material.**
+-dontwarn org.slf4j.**
+
+# Keep necessary attributes
+-keepattributes RuntimeVisible*Annotations
+-keepattributes AnnotationDefault
+
+# Shrinking optimization
+-shrinkunusedprotofields
+-optimizationpasses 5
+
+# Additional size optimizations
 -keepclasseswithmembernames class * {
     native <methods>;
 }
 
-# Keep all classes in your app package
--keep class com.androdevlinux.ctvplayground.** { *; }
-
-# Keep Kotlin Coroutines
--keepclassmembernames class kotlinx.** {
-    volatile <fields>;
+# Remove debug logs in release
+-assumenosideeffects class android.util.Log {
+    public static *** d(...);
+    public static *** v(...);
 }
--keepclassmembers class kotlin.coroutines.** {
-    volatile <fields>;
-}
-
-# Keep Kotlin Serialization
--keepattributes *Annotation*, InnerClasses
--dontnote kotlinx.serialization.AnnotationsKt
-
-# Keep Kotlin data classes
--keepclassmembers class * {
-    public static synthetic <methods>;
-}
-
-# Keep enum classes
--keepclassmembers enum * {
-    public static **[] values();
-    public static ** valueOf(java.lang.String);
-}
-
-# Keep R classes
--keepclassmembers class **.R$* {
-    public static <fields>;
-}
-
-# Keep Parcelable classes
--keep class * implements android.os.Parcelable {
-    public static final android.os.Parcelable$Creator *;
-}
-
-# Keep Serializable classes
--keepnames class * implements java.io.Serializable
--keepclassmembers class * implements java.io.Serializable {
-    static final long serialVersionUID;
-    private static final java.io.ObjectStreamField[] serialPersistentFields;
-    !static !transient <fields>;
-    !private <fields>;
-    !private <methods>;
-    private void writeObject(java.io.ObjectOutputStream);
-    private void readObject(java.io.ObjectInputStream);
-    java.lang.Object writeReplace();
-    java.lang.Object readResolve();
-}
-
-# Keep SLF4J
--dontwarn org.slf4j.**
--dontwarn javax.annotation.**
--dontwarn javax.inject.**
-
-# Keep Compose
--keep class androidx.compose.** { *; }
--dontwarn androidx.compose.**
--keepclasseswithmembers class * {
-    @androidx.compose.ui.tooling.preview.Preview <methods>;
-}
-
-# Keep ViewModels
--keepclassmembers class * extends androidx.lifecycle.ViewModel {
-    <init>(...);
-}
-
-# Keep Bitcoin-specific classes
--keep class org.bitcoin.NativeSecp256k1 { *; }
--keep class org.bitcoin.Secp256k1Context { *; }
-
-# Keep common crypto algorithms
--keep class javax.crypto.** { *; }
--keep class javax.crypto.spec.** { *; }
--keep class java.security.** { *; }
--keep class java.security.spec.** { *; }
-
-# Keep BouncyCastle provider
--keep class org.spongycastle.** { *; }
--dontwarn org.spongycastle.**
--keep class org.bouncycastle.** { *; }
--dontwarn org.bouncycastle.**
-
-# Keep all security providers
--keep class * extends java.security.Provider { *; }
