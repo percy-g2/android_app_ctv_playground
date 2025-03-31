@@ -131,6 +131,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Bitcoin Inquisition team
 - bitcoinj developers
 - Android/Kotlin community
+- ursuscamp for rust CTV playground
 
 ## Disclaimer
 
