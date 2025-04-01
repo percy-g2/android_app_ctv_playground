@@ -6,6 +6,7 @@ import com.androdevlinux.ctvplayground.models.Output
 import com.androdevlinux.ctvplayground.models.TxType
 import com.androdevlinux.ctvplayground.utils.HashUtils
 import org.bitcoinj.base.Address
+import org.bitcoinj.base.AddressParser
 import org.bitcoinj.base.Coin
 import org.bitcoinj.base.LegacyAddress
 import org.bitcoinj.base.Sha256Hash
@@ -43,14 +44,14 @@ class CTVTransaction(private val context: CTVContext) {
     fun createSpendingTransaction(prevTxId: Sha256Hash, outputIndex: Int): Result<List<Transaction>> = runCatching {
         val transactions = mutableListOf<Transaction>()
 
-        val tx = Transaction(context.network).apply {
+        val tx = Transaction().apply {
             setVersion(context.fields.version)
             lockTime = context.fields.locktime
 
             // Add input
             addInput(TransactionInput(
                 null,
-                ScriptBuilder().build().program,
+                ScriptBuilder().build().program(),
                 TransactionOutPoint(outputIndex.toLong(),prevTxId),
                 Coin.valueOf(0)
             ))
@@ -59,7 +60,7 @@ class CTVTransaction(private val context: CTVContext) {
             context.fields.outputs.forEach { output ->
                 when (output) {
                     is Output.Address -> {
-                        val addr = Address.fromString(context.network, output.address)
+                        val addr = AddressParser.getDefault(context.network).parseAddress(output.address)
                         addOutput(Coin.valueOf(output.value), ScriptBuilder.createOutputScript(addr))
                     }
                     is Output.Data -> {
@@ -90,7 +91,7 @@ class CTVTransaction(private val context: CTVContext) {
     }
 
     private fun createBaseTx(): Transaction {
-        return Transaction(context.network).apply {
+        return Transaction().apply {
             setVersion(context.fields.version)
             lockTime = context.fields.locktime
 
@@ -98,7 +99,7 @@ class CTVTransaction(private val context: CTVContext) {
             context.fields.sequences.forEach { sequence ->
                 addInput(TransactionInput(
                     null,
-                    ScriptBuilder().build().program,
+                    ScriptBuilder().build().program(),
                     TransactionOutPoint( 0, Sha256Hash.ZERO_HASH),
                     Coin.valueOf(0)
                 ).apply {
@@ -110,7 +111,7 @@ class CTVTransaction(private val context: CTVContext) {
             context.fields.outputs.forEach { output ->
                 when (output) {
                     is Output.Address -> {
-                        val addr = Address.fromString(context.network, output.address)
+                        val addr = AddressParser.getDefault(context.network).parseAddress(output.address)
                         addOutput(Coin.valueOf(output.value), ScriptBuilder.createOutputScript(addr))
                     }
                     is Output.Data -> {

@@ -10,8 +10,8 @@ import com.androdevlinux.ctvplayground.utils.ScriptUtils
 import org.bitcoinj.base.Address
 import org.bitcoinj.base.Coin
 import org.bitcoinj.base.LegacyAddress
+import org.bitcoinj.base.Network
 import org.bitcoinj.base.Sha256Hash
-import org.bitcoinj.core.NetworkParameters
 import org.bitcoinj.core.Transaction
 import org.bitcoinj.core.TransactionInput
 import org.bitcoinj.core.TransactionOutPoint
@@ -25,7 +25,7 @@ class Vault(
     private val hot: Address,
     private val cold: Address,
     private val amount: Coin,
-    private val network: NetworkParameters,
+    private val network: Network,
     private val delay: Int,
     private val taproot: Boolean
 ) {
@@ -34,7 +34,7 @@ class Vault(
         private const val OP_CTV = CTVContext.CTV_OP_CODE
     }
 
-    fun createVaultingAddress(): Result<Address> = runCatching {
+    private fun createVaultingAddress(): Result<Address> = runCatching {
         val vaultScript = createVaultScript().getOrThrow()
         if (taproot) {
             createTaprootAddress(vaultScript)
@@ -47,13 +47,13 @@ class Vault(
         fundingTxId: Sha256Hash,
         vout: Int
     ): Result<Transaction> = runCatching {
-        Transaction(network).apply {
+        Transaction().apply {
             setVersion(2)
 
             // Add input
             addInput(TransactionInput(
                 null,
-                ScriptBuilder().build().program,
+                ScriptBuilder().build().program(),
                 TransactionOutPoint(vout.toLong(), fundingTxId),
                 Coin.valueOf(0)
             ))
@@ -77,13 +77,13 @@ class Vault(
         val unvaultScript = createUnvaultScript().getOrThrow()
         val witnessProgram = ScriptUtils.createP2WSHScript(unvaultScript)
 
-        Transaction(network).apply {
+        Transaction().apply {
             setVersion(2)
 
             // Add input from vault
             addInput(TransactionInput(
                 null,
-                ScriptBuilder().build().program,
+                ScriptBuilder().build().program(),
                 TransactionOutPoint(vout.toLong(), vaultTxId),
                 Coin.valueOf(0)
             ))
@@ -93,7 +93,7 @@ class Vault(
                 TransactionOutput(
                     null,
                     amount.subtract(Coin.valueOf(600)),
-                    witnessProgram.program // Use program bytes directly
+                    witnessProgram.program() // Use program bytes directly
                 )
             )
         }
@@ -112,12 +112,12 @@ class Vault(
         txId: Sha256Hash,
         vout: Int
     ): Result<Transaction> = runCatching {
-        Transaction(network).apply {
+        Transaction().apply {
             setVersion(2)
 
             addInput(TransactionInput(
                 null,
-                ScriptBuilder().build().program,
+                ScriptBuilder().build().program(),
                 TransactionOutPoint(vout.toLong(), txId),
                 Coin.valueOf(0)
             ))
@@ -136,12 +136,12 @@ class Vault(
         txId: Sha256Hash,
         vout: Int
     ): Result<Transaction> = runCatching {
-        Transaction(network).apply {
+        Transaction().apply {
             setVersion(2)
 
             addInput(TransactionInput(
                 null,
-                ScriptBuilder().build().program,
+                ScriptBuilder().build().program(),
                 TransactionOutPoint(vout.toLong(), txId),
                 Coin.valueOf(0)
             ).apply {

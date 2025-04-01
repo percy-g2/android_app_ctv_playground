@@ -1,10 +1,10 @@
 package com.androdevlinux.ctvplayground.models
 
-import org.bitcoinj.core.NetworkParameters
+import org.bitcoinj.base.Network
 import org.bitcoinj.crypto.ECKey
 
 data class CTVContext(
-    val network: NetworkParameters,
+    val network: Network,
     val txType: TxType,
     val fields: Fields
 ) {

@@ -16,14 +16,14 @@ object ScriptUtils {
 
     // In ScriptUtils.kt
     fun createP2WSHScript(script: Script): Script {
-        val witnessScript = BitcoinUtils.sha256(script.program)
-        Log.d("ScriptUtils", "Original Script: ${script.chunks.joinToString(" ")}")
+        val witnessScript = BitcoinUtils.sha256(script.program())
+        Log.d("ScriptUtils", "Original Script: ${script.chunks().joinToString(" ")}")
         Log.d("ScriptUtils", "Witness Script Hash: ${witnessScript.toHex()}")
         return ScriptBuilder().apply {
             number(0)
             data(witnessScript)
         }.build().also {
-            Log.d("ScriptUtils", "P2WSH Script: ${it.chunks.joinToString(" ")}")
+            Log.d("ScriptUtils", "P2WSH Script: ${it.chunks().joinToString(" ")}")
         }
     }
 
@@ -31,7 +31,7 @@ object ScriptUtils {
 
     fun createP2TRScript(script: Script): Script {
         // P2TR: OP_1 <32-byte-hash>
-        val scriptHash = BitcoinUtils.sha256(script.program)
+        val scriptHash = BitcoinUtils.sha256(script.program())
         return ScriptBuilder().apply {
             // Use the correct OP_1 value (1)
             number(1)

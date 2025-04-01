@@ -29,7 +29,7 @@ class CTVViewModel : ViewModel() {
             delay(500)
             try {
                 val context = CTVContext(
-                    network = TestNet3Params.get(),
+                    network = TestNet3Params.get().network(),
                     txType = TxType.Segwit,
                     fields = Fields(
                         version = 2,
@@ -91,7 +91,7 @@ class CTVViewModel : ViewModel() {
                     hotAddress = hotAddress,
                     coldAddress = coldAddress,
                     amount = amount,
-                    network = TestNet3Params.get(),
+                    network = TestNet3Params.get().network(),
                     delay = delay,
                     useTaproot = false
                 ).getOrThrow()

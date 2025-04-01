@@ -5,7 +5,7 @@ import com.androdevlinux.ctvplayground.hash.CTVHashCalculator
 import com.androdevlinux.ctvplayground.models.CTVContext
 import com.androdevlinux.ctvplayground.models.Output
 import com.androdevlinux.ctvplayground.utils.toOutputScript
-import org.bitcoinj.base.Address
+import org.bitcoinj.base.AddressParser
 import org.bitcoinj.base.Coin
 import org.bitcoinj.base.Sha256Hash
 import org.bitcoinj.core.Transaction
@@ -20,7 +20,7 @@ class VaultTransaction(private val context: CTVContext) {
     }
 
     private fun createBaseTx(): Transaction {
-        return Transaction(context.network).apply {
+        return Transaction().apply {
             setVersion(context.fields.version)
             lockTime = context.fields.locktime
 
@@ -29,7 +29,7 @@ class VaultTransaction(private val context: CTVContext) {
                 addInput(
                     TransactionInput(
                         null,
-                        ScriptBuilder().build().program,
+                        ScriptBuilder().build().program(),
                         TransactionOutPoint(0L, Sha256Hash.ZERO_HASH),
                         Coin.ZERO
                     ).apply {
@@ -42,7 +42,7 @@ class VaultTransaction(private val context: CTVContext) {
             context.fields.outputs.forEach { output ->
                 when (output) {
                     is Output.Address -> {
-                        val addr = Address.fromString(context.network, output.address)
+                        val addr = AddressParser.getDefault(context.network).parseAddress(output.address)
                         addOutput(Coin.valueOf(output.value), addr.toOutputScript())
                     }
                     is Output.Data -> {

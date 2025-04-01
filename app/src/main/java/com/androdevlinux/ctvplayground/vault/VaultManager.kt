@@ -1,9 +1,9 @@
 package com.androdevlinux.ctvplayground.vault
 
-import org.bitcoinj.base.Address
+import org.bitcoinj.base.AddressParser
 import org.bitcoinj.base.Coin
+import org.bitcoinj.base.Network
 import org.bitcoinj.base.Sha256Hash
-import org.bitcoinj.core.NetworkParameters
 import org.bitcoinj.core.Transaction
 
 class VaultManager {
@@ -11,12 +11,12 @@ class VaultManager {
         hotAddress: String,
         coldAddress: String,
         amount: Long,
-        network: NetworkParameters,
+        network: Network,
         delay: Int,
         useTaproot: Boolean = false
     ): Result<Vault> = runCatching {
-        val hot = Address.fromString(network, hotAddress)
-        val cold = Address.fromString(network, coldAddress)
+        val hot = AddressParser.getDefault(network).parseAddress(hotAddress)
+        val cold = AddressParser.getDefault(network).parseAddress(coldAddress)
 
         Vault(
             hot = hot,
