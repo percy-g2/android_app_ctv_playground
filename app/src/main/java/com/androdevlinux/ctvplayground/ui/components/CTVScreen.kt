@@ -214,7 +214,7 @@ fun CTVScreen(
                                     )
                                     SelectionContainer {
                                         Text(
-                                            text = "TXID: ${tx.txId}",
+                                            text = "TX: ${tx.txHash}",
                                             style = MaterialTheme.typography.bodyMedium
                                         )
                                     }

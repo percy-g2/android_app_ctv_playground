@@ -15,6 +15,7 @@ import org.bitcoinj.core.TransactionInput
 import org.bitcoinj.core.TransactionOutPoint
 import org.bitcoinj.script.Script
 import org.bitcoinj.script.ScriptBuilder
+import org.bitcoinj.script.ScriptOpCodes
 
 class CTVTransaction(private val context: CTVContext) {
 
@@ -22,7 +23,7 @@ class CTVTransaction(private val context: CTVContext) {
         val templateHash = CTVHashCalculator.calculateTemplateHash(createBaseTx(), context.fields.inputIdx)
         ScriptBuilder().apply {
             data(templateHash)
-            op(CTVContext.CTV_OP_CODE)
+            op(ScriptOpCodes.OP_NOP4)
         }.build()
     }
 

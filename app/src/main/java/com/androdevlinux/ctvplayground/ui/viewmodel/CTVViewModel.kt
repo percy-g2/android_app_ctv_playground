@@ -7,6 +7,7 @@ import com.androdevlinux.ctvplayground.models.CTVContext
 import com.androdevlinux.ctvplayground.models.Fields
 import com.androdevlinux.ctvplayground.models.Output
 import com.androdevlinux.ctvplayground.models.TxType
+import com.androdevlinux.ctvplayground.utils.decodeScriptPubKey
 import com.androdevlinux.ctvplayground.vault.VaultManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -14,7 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.bitcoinj.base.Sha256Hash
-import org.bitcoinj.params.TestNet3Params
+import org.bitcoinj.params.SigNetParams
 
 class CTVViewModel : ViewModel() {
     private val _ctvState = MutableStateFlow<CTVState>(CTVState.Initial)
@@ -29,7 +30,7 @@ class CTVViewModel : ViewModel() {
             delay(500)
             try {
                 val context = CTVContext(
-                    network = TestNet3Params.get().network(),
+                    network = SigNetParams.get().network(),
                     txType = TxType.Segwit,
                     fields = Fields(
                         version = 2,
@@ -59,7 +60,7 @@ class CTVViewModel : ViewModel() {
                     address = ctvAddress.toString(),
                     transactions = spendingTxs.map { tx ->
                         TransactionDetails(
-                            txId = tx.txId.toString(),
+                            txHash = tx.serialize().joinToString("") { "%02x".format(it) },
                             size = tx.messageSize(),
                             outputCount = tx.outputs.size
                         )
@@ -91,7 +92,7 @@ class CTVViewModel : ViewModel() {
                     hotAddress = hotAddress,
                     coldAddress = coldAddress,
                     amount = amount,
-                    network = TestNet3Params.get().network(),
+                    network = SigNetParams.get().network(),
                     delay = delay,
                     useTaproot = false
                 ).getOrThrow()
@@ -116,23 +117,23 @@ class CTVViewModel : ViewModel() {
 
                 _vaultState.value = VaultState.Success(
                     vaultingTx = VaultingTxDetails(
-                        txId = vaultingTx.txId.toString(),
+                        txHash = vaultingTx.serialize().joinToString("") { "%02x".format(it) },
                         size = vaultingTx.messageSize(),
-                        outputScript = vaultingTx.outputs[0].scriptPubKey.toString()
+                        outputScript = decodeScriptPubKey(vaultingTx.outputs[0].scriptPubKey)
                     ),
                     unvaultingTx = UnvaultingTxDetails(
-                        txId = unvaultingTx.txId.toString(),
+                        txHash = unvaultingTx.serialize().joinToString("") { "%02x".format(it) },
                         size = unvaultingTx.messageSize(),
-                        outputScript = unvaultingTx.outputs[0].scriptPubKey.toString()
+                        outputScript = decodeScriptPubKey(unvaultingTx.outputs[0].scriptPubKey)
                     ),
                     spendingTxs = SpendingTxDetails(
                         coldTx = TxDetails(
-                            txId = coldTx.txId.toString(),
-                            outputScript = coldTx.outputs[0].scriptPubKey.toString()
+                            txHash = coldTx.serialize().joinToString("") { "%02x".format(it) },
+                            outputScript = decodeScriptPubKey(coldTx.outputs[0].scriptPubKey)
                         ),
                         hotTx = TxDetails(
-                            txId = hotTx.txId.toString(),
-                            outputScript = hotTx.outputs[0].scriptPubKey.toString()
+                            txHash = hotTx.serialize().joinToString("") { "%02x".format(it) },
+                            outputScript = decodeScriptPubKey(hotTx.outputs[0].scriptPubKey)
                         )
                     )
                 )
@@ -161,7 +162,7 @@ sealed class CTVState {
 }
 
 data class TransactionDetails(
-    val txId: String,
+    val txHash: String,
     val size: Int,
     val outputCount: Int
 )
@@ -178,13 +179,13 @@ sealed class VaultState {
 }
 
 data class VaultingTxDetails(
-    val txId: String,
+    val txHash: String,
     val size: Int,
     val outputScript: String
 )
 
 data class UnvaultingTxDetails(
-    val txId: String,
+    val txHash: String,
     val size: Int,
     val outputScript: String
 )
@@ -195,6 +196,6 @@ data class SpendingTxDetails(
 )
 
 data class TxDetails(
-    val txId: String,
+    val txHash: String,
     val outputScript: String
 )

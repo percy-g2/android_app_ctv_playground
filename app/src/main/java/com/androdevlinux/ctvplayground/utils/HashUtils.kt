@@ -1,5 +1,6 @@
 package com.androdevlinux.ctvplayground.utils
 
+import org.bitcoinj.base.Sha256Hash
 import org.bitcoinj.script.Script
 import java.security.MessageDigest
 
@@ -13,6 +14,7 @@ object HashUtils {
     }
 
     fun calculateScriptHash(script: Script): ByteArray {
-        return sha256hash160(script.program)
+        val ripemd160 = MessageDigest.getInstance("RIPEMD160")
+        return ripemd160.digest(Sha256Hash.hash(script.program()))
     }
 }

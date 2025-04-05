@@ -7,11 +7,7 @@ data class CTVContext(
     val network: Network,
     val txType: TxType,
     val fields: Fields
-) {
-    companion object {
-        const val CTV_OP_CODE = 0xb3 // OP_NOP4
-    }
-}
+)
 
 data class Fields(
     val version: Int = 2,

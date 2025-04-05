@@ -1,7 +1,6 @@
 package com.androdevlinux.ctvplayground.utils
 
 import android.util.Log
-import com.androdevlinux.ctvplayground.models.CTVContext
 import org.bitcoinj.script.Script
 import org.bitcoinj.script.ScriptBuilder
 import org.bitcoinj.script.ScriptOpCodes
@@ -10,7 +9,7 @@ object ScriptUtils {
     fun createCTVScript(templateHash: ByteArray): Script {
         return ScriptBuilder().apply {
             data(templateHash)
-            op(CTVContext.CTV_OP_CODE)
+            op(ScriptOpCodes.OP_NOP4)
         }.build()
     }
 
@@ -51,12 +50,27 @@ object ScriptUtils {
             op(ScriptOpCodes.OP_CHECKSEQUENCEVERIFY)
             op(ScriptOpCodes.OP_DROP)
             data(hotTemplateHash)
-            op(CTVContext.CTV_OP_CODE)
+            op(ScriptOpCodes.OP_NOP4)
             // Cold path
             op(ScriptOpCodes.OP_ELSE)
             data(coldTemplateHash)
-            op(CTVContext.CTV_OP_CODE)
+            op(ScriptOpCodes.OP_NOP4)
             op(ScriptOpCodes.OP_ENDIF)
         }.build()
+    }
+}
+
+fun decodeScriptPubKey(scriptPubKey: Script): String {
+    return scriptPubKey.chunks().joinToString(" ") { chunk ->
+        when {
+            chunk.isOpCode -> ScriptOpCodes.getOpCodeName(chunk.opcode)
+            chunk.data != null -> {
+                val hexData = chunk.data!!.joinToString("") { "%02x".format(it) }
+                "PUSH(${hexData})"
+            }
+            else -> "UNKNOWN"
+        }
+    }.also { decoded ->
+        Log.d("ScriptUtils", "Decoded ScriptPubKey: $decoded")
     }
 }

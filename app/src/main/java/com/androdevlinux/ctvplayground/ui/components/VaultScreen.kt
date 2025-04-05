@@ -41,8 +41,8 @@ fun VaultScreen(
     viewModel: CTVViewModel,
     modifier: Modifier = Modifier
 ) {
-    var hotAddress by remember { mutableStateOf("tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx") }
-    var coldAddress by remember { mutableStateOf("tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx") }
+    var hotAddress by remember { mutableStateOf("tb1qatphpanq74sd3mu449q4xnukv85pqsc2gl4jpv") }
+    var coldAddress by remember { mutableStateOf("tb1q4hrknsqdlpp69hspp4udcyvamhj23zhur3hnqp") }
     var amount by remember { mutableStateOf("100000") }
     var delay by remember { mutableStateOf("144") }
     val vaultState by viewModel.vaultState.collectAsState()
@@ -251,7 +251,7 @@ fun VaultScreen(
                             Column(modifier = Modifier.padding(8.dp)) {
                                 SelectionContainer {
                                     Text(
-                                        text = "TXID: ${state.vaultingTx.txId}",
+                                        text = "TX: ${state.vaultingTx.txHash}",
                                         style = MaterialTheme.typography.bodyMedium
                                     )
                                 }
@@ -290,7 +290,7 @@ fun VaultScreen(
                             Column(modifier = Modifier.padding(8.dp)) {
                                 SelectionContainer {
                                     Text(
-                                        text = "TXID: ${state.unvaultingTx.txId}",
+                                        text = "TXID: ${state.unvaultingTx.txHash}",
                                         style = MaterialTheme.typography.bodyMedium
                                     )
                                 }
@@ -336,7 +336,7 @@ fun VaultScreen(
                             Column(modifier = Modifier.padding(8.dp)) {
                                 SelectionContainer {
                                     Text(
-                                        text = "TXID: ${state.spendingTxs.coldTx.txId}",
+                                        text = "TXID: ${state.spendingTxs.coldTx.txHash}",
                                         style = MaterialTheme.typography.bodyMedium
                                     )
                                 }
@@ -370,7 +370,7 @@ fun VaultScreen(
                             Column(modifier = Modifier.padding(8.dp)) {
                                 SelectionContainer {
                                     Text(
-                                        text = "TXID: ${state.spendingTxs.hotTx.txId}",
+                                        text = "TXID: ${state.spendingTxs.hotTx.txHash}",
                                         style = MaterialTheme.typography.bodyMedium
                                     )
                                 }

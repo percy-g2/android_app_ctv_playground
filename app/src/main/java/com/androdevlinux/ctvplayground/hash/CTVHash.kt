@@ -4,73 +4,83 @@ import org.bitcoinj.core.Transaction
 import java.io.ByteArrayOutputStream
 import java.security.MessageDigest
 
-interface TemplateHash {
-    fun templateHash(inputIndex: Int): Result<ByteArray>
-}
-
 object CTVHashCalculator {
     fun calculateTemplateHash(tx: Transaction, inputIndex: Int): ByteArray {
         val buffer = ByteArrayOutputStream()
 
-        // Write version
+        // 1. Version (4 bytes, little-endian)
         buffer.write(intToLE(tx.version.toInt()))
 
-        // Write locktime
-        buffer.write(longToLE(tx.lockTime))
+        // 2. Locktime (4 bytes, little-endian)
+        buffer.write(intToLE(tx.lockTime.toInt()))
 
-        // Calculate and write script sigs if present
-        calculateScriptSigs(tx)?.let { buffer.write(it) }
-
-        // Write number of inputs
+        // 3. Input count (4 bytes, little-endian)
         buffer.write(intToLE(tx.inputs.size))
 
-        // Write sequences
-        buffer.write(calculateSequences(tx))
+        // 4. Sequences hash (32 bytes)
+        buffer.write(calculateSequencesHash(tx))
 
-        // Write number of outputs
+        // 5. Output count (4 bytes, little-endian)
         buffer.write(intToLE(tx.outputs.size))
 
-        // Write outputs
-        buffer.write(calculateOutputs(tx))
+        // 6. Outputs hash (32 bytes)
+        buffer.write(calculateOutputsHash(tx))
 
-        // Write input index
+        // 7. Input index (4 bytes, little-endian)
         buffer.write(intToLE(inputIndex))
 
-        return sha256(buffer.toByteArray())
+        // Double SHA256 as specified in BIP-119
+        return sha256(sha256(buffer.toByteArray()))
     }
 
-    private fun calculateScriptSigs(tx: Transaction): ByteArray? {
-        if (tx.inputs.all { it.scriptSig.program.isEmpty() }) {
-            return null
-        }
-
+    private fun calculateSequencesHash(tx: Transaction): ByteArray {
         val buffer = ByteArrayOutputStream()
         tx.inputs.forEach { input ->
-            buffer.write(input.scriptSig.program)
+            buffer.write(intToLE(input.sequenceNumber.toInt()))
         }
         return sha256(buffer.toByteArray())
     }
 
-    private fun calculateSequences(tx: Transaction): ByteArray {
-        val buffer = ByteArrayOutputStream()
-        tx.inputs.forEach { input ->
-            buffer.write(longToLE(input.sequenceNumber))
-        }
-        return sha256(buffer.toByteArray())
-    }
-
-    private fun calculateOutputs(tx: Transaction): ByteArray {
+    private fun calculateOutputsHash(tx: Transaction): ByteArray {
         val buffer = ByteArrayOutputStream()
         tx.outputs.forEach { output ->
+            // Amount (8 bytes, little-endian)
             buffer.write(longToLE(output.value.value))
-            buffer.write(output.scriptPubKey.program)
+            // Script
+            val script = output.scriptPubKey.program
+            buffer.write(writeVarInt(script.size.toLong()))
+            buffer.write(script)
         }
         return sha256(buffer.toByteArray())
     }
 
-    private fun sha256(data: ByteArray): ByteArray {
-        val digest = MessageDigest.getInstance("SHA-256")
-        return digest.digest(data)
+    private fun writeVarInt(value: Long): ByteArray {
+        return when {
+            value < 0xfd -> byteArrayOf(value.toByte())
+            value <= 0xffff -> byteArrayOf(
+                0xfd.toByte(),
+                value.toByte(),
+                (value ushr 8).toByte()
+            )
+            value <= 0xffffffffL -> byteArrayOf(
+                0xfe.toByte(),
+                value.toByte(),
+                (value ushr 8).toByte(),
+                (value ushr 16).toByte(),
+                (value ushr 24).toByte()
+            )
+            else -> byteArrayOf(
+                0xff.toByte(),
+                value.toByte(),
+                (value ushr 8).toByte(),
+                (value ushr 16).toByte(),
+                (value ushr 24).toByte(),
+                (value ushr 32).toByte(),
+                (value ushr 40).toByte(),
+                (value ushr 48).toByte(),
+                (value ushr 56).toByte()
+            )
+        }
     }
 
     private fun intToLE(value: Int): ByteArray {
@@ -93,5 +103,10 @@ object CTVHashCalculator {
             (value ushr 48).toByte(),
             (value ushr 56).toByte()
         )
+    }
+
+    private fun sha256(data: ByteArray): ByteArray {
+        val digest = MessageDigest.getInstance("SHA-256")
+        return digest.digest(data)
     }
 }

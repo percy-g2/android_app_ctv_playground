@@ -9,8 +9,9 @@ import com.androdevlinux.ctvplayground.utils.HashUtils
 import com.androdevlinux.ctvplayground.utils.ScriptUtils
 import org.bitcoinj.base.Address
 import org.bitcoinj.base.Coin
-import org.bitcoinj.base.LegacyAddress
 import org.bitcoinj.base.Network
+import org.bitcoinj.base.ScriptType
+import org.bitcoinj.base.SegwitAddress
 import org.bitcoinj.base.Sha256Hash
 import org.bitcoinj.core.Transaction
 import org.bitcoinj.core.TransactionInput
@@ -27,19 +28,16 @@ class Vault(
     private val amount: Coin,
     private val network: Network,
     private val delay: Int,
-    private val taproot: Boolean
+    private val taproot: Boolean,
+    private val ecKey: ECKey = ECKey()
 ) {
-    companion object {
-        private const val OP_CSV = ScriptOpCodes.OP_CHECKSEQUENCEVERIFY
-        private const val OP_CTV = CTVContext.CTV_OP_CODE
-    }
 
     private fun createVaultingAddress(): Result<Address> = runCatching {
         val vaultScript = createVaultScript().getOrThrow()
         if (taproot) {
             createTaprootAddress(vaultScript)
         } else {
-            createSegwitAddress(vaultScript)
+            createSegwitAddress()
         }
     }
 
@@ -60,6 +58,7 @@ class Vault(
 
             // Add output to vault address
             val vaultAddress = createVaultingAddress().getOrThrow()
+            println("vaultAddress $vaultAddress")
             addOutput(
                 TransactionOutput(
                     null,
@@ -75,7 +74,7 @@ class Vault(
         vout: Int
     ): Result<Transaction> = runCatching {
         val unvaultScript = createUnvaultScript().getOrThrow()
-        val witnessProgram = ScriptUtils.createP2WSHScript(unvaultScript)
+       // val witnessProgram = ScriptUtils.createP2WSHScript(unvaultScript)
 
         Transaction().apply {
             setVersion(2)
@@ -93,7 +92,7 @@ class Vault(
                 TransactionOutput(
                     null,
                     amount.subtract(Coin.valueOf(600)),
-                    witnessProgram.program() // Use program bytes directly
+                    unvaultScript.program() // Use program bytes directly
                 )
             )
         }
@@ -158,29 +157,39 @@ class Vault(
         }
     }
 
-    private fun createSegwitAddress(script: Script): Address {
-        val scriptHash = HashUtils.calculateScriptHash(script)
-        return LegacyAddress.fromScriptHash(network, scriptHash)
+    private fun createSegwitAddress(): Address {
+      //  val scriptHash = HashUtils.calculateScriptHash(script)
+        val hotHash = calculateHotTemplateHash().getOrThrow()
+        val coldHash = calculateColdTemplateHash().getOrThrow()
+        val redeemScript = ScriptUtils.createUnvaultScript(24 * 60, hotHash, coldHash)
+        val p2wshScript = ScriptBuilder.createP2WSHOutputScript(redeemScript)
+        val scriptHash = HashUtils.calculateScriptHash(p2wshScript)
+        return SegwitAddress.fromHash(network, scriptHash)
     }
 
     private fun createTaprootAddress(script: Script): Address {
-        // Simplified P2TR implementation
-        val scriptHash = HashUtils.calculateScriptHash(script)
-        return LegacyAddress.fromScriptHash(network, scriptHash)
+        val ecKey = ECKey()
+        return ecKey.toAddress(ScriptType.P2PKH, network)
     }
 
     private fun createUnvaultingAddress(): Result<Address> = runCatching {
-        val script = createUnvaultScript().getOrThrow()
         if (taproot) {
-            createTaprootAddress(script)
+            ecKey.toAddress(ScriptType.P2PKH, network)
         } else {
-            createSegwitAddress(script)
+           createSegwitAddress()
         }
     }
 
     private fun createVaultScript(): Result<Script> = runCatching {
         val templateHash = calculateTemplateHash().getOrThrow()
-        ScriptUtils.createCTVScript(templateHash)
+        ScriptBuilder().apply {
+            // Standard BIP-119 CTV script
+            data(templateHash)            // Push template hash
+            op(ScriptOpCodes.OP_NOP4)                   // CheckTemplateVerify opcode
+            op(ScriptOpCodes.OP_DROP)    // Clean up stack
+            // Add verification for spending
+            op(ScriptOpCodes.OP_TRUE)    // Allow spending if template matches
+        }.build()
     }
 
     private fun createUnvaultScript(): Result<Script> = runCatching {
@@ -196,7 +205,7 @@ class Vault(
             fields = Fields(
                 version = 2,
                 locktime = 0,
-                sequences = listOf(0L),
+                sequences = listOf(0xFFFFFFFFL),
                 outputs = listOf(
                     Output.Address(
                         address = createUnvaultingAddress().getOrThrow().toString(),
@@ -206,7 +215,9 @@ class Vault(
                 inputIdx = 0
             )
         )
-        VaultTransaction(ctx).calculateTemplateHash()
+        val vault_ctv = VaultTransaction(ctx)
+        println(ctx.fields.outputs[0])
+        vault_ctv.calculateTemplateHash()
     }
 
     private fun calculateHotTemplateHash(): Result<ByteArray> = runCatching {
